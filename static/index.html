@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PBS Space Time — Companion & Tracker</title>
+  <link rel="icon" type="image/jpeg" href="/pbsspacetime-logo.jpg" />
+  <style>
+    :root {
+      --bg-0: #070913;
+      --bg-1: #0e1224;
+      --bg-2: #161c36;
+      --bg-3: #1f274b;
+      --border: #28325e;
+      --text-0: #f1f5f9;
+      --text-1: #94a3b8;
+      --text-2: #64748b;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.16);
+      --gold: #f59e0b;
+      --green: #10b981;
+      --purple: #a855f7;
+      --radius: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: radial-gradient(circle at 15% 15%, #111836 0%, var(--bg-0) 65%);
+      color: var(--text-0);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Header */
+    header {
+      height: 60px;
+      background: rgba(14, 18, 36, 0.9);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.45);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      display: block;
+    }
+
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.82rem;
+      color: var(--text-1);
+    }
+
+    .stat-pill {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-pill strong {
+      color: var(--text-0);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button, select, input {
+      font: inherit;
+      color: inherit;
+    }
+
+    .btn {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      color: var(--text-0);
+      padding: 6px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      background: var(--bg-3);
+      border-color: var(--accent);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #4f46e5);
+      border-color: #38bdf8;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.12);
+    }
+
+    .btn-patreon {
+      background: rgba(255, 66, 77, 0.12);
+      border-color: rgba(255, 66, 77, 0.4);
+      color: #ff6b75;
+      text-decoration: none;
+    }
+
+    .btn-patreon:hover {
+      background: rgba(255, 66, 77, 0.22);
+      border-color: #ff424d;
+      color: #ff8b94;
+    }
+
+    .btn.active {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Main Split View */
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 480px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    @media (max-width: 1100px) {
+      .workspace {
+        grid-template-columns: 1fr 400px;
+      }
+    }
+
+    /* Left Pane: Catalog & Explorer */
+    .catalog-pane {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border-right: 1px solid var(--border);
+    }
+
+    .toolbar {
+      padding: 12px 20px;
+      background: rgba(14, 18, 36, 0.65);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-1);
+      padding: 6px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-0);
+      background: var(--bg-2);
+    }
+
+    .tab-btn.active {
+      background: var(--bg-2);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .filters-row {
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(14, 18, 36, 0.35);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      padding: 7px 12px;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    .select-ctrl {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      outline: none;
+    }
+
+    .active-filter-banner {
+      margin: 10px 20px 0;
+      padding: 8px 14px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.84rem;
+    }
+
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+    }
+
+    /* Episode List / Cards */
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 14px;
+    }
+
+    .video-card {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+      position: relative;
+    }
+
+    .video-card:hover {
+      transform: translateY(-2px);
+      border-color: #475569;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .video-card.playing {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    .thumb-wrap {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .duration-badge {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.82);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .status-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .status-watched {
+      background: rgba(16, 185, 129, 0.9);
+      color: #042f2e;
+    }
+
+    .status-in_progress {
+      background: rgba(245, 158, 11, 0.92);
+      color: #451a03;
+    }
+
+    .chosen-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(7, 9, 19, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--text-1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.15s;
+    }
+
+    .chosen-btn:hover {
+      transform: scale(1.1);
+      color: var(--gold);
+    }
+
+    .chosen-btn.is-chosen {
+      background: rgba(245, 158, 11, 0.22);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .progress-bar-track {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+    }
+
+    .card-body {
+      padding: 11px 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      flex: 1;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-summary {
+      font-size: 0.77rem;
+      color: var(--text-1);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .topic-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: auto;
+      padding-top: 4px;
+    }
+
+    .pill {
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      color: var(--text-1);
+      white-space: nowrap;
+    }
+
+    .pill.custom {
+      border-color: var(--purple);
+      color: #d8b4fe;
+    }
+
+    /* Playlists & Topics Cards */
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 14px;
+    }
+
+    .group-card {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.15s ease;
+    }
+
+    .group-card:hover {
+      border-color: var(--accent);
+      background: var(--bg-2);
+    }
+
+    .group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .group-title {
+      font-weight: 600;
+      font-size: 0.96rem;
+      line-height: 1.3;
+    }
+
+    .group-count {
+      font-size: 0.76rem;
+      color: var(--accent);
+      background: var(--accent-glow);
+      padding: 2px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .group-progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .group-progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      color: var(--text-1);
+    }
+
+    .group-progress-bar {
+      height: 6px;
+      background: var(--bg-0);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .group-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+    }
+
+    /* Right Pane: Docked Player & Companion */
+    .inspector-pane {
+      background: var(--bg-1);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .player-box {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      position: relative;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .player-box iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .fullscreen-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+      background: rgba(14, 18, 36, 0.75);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--text-0);
+      padding: 5px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      display: none;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .player-box:hover .fullscreen-btn {
+      display: inline-flex;
+    }
+
+    .fullscreen-btn:hover {
+      background: var(--bg-2);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .player-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-1);
+      gap: 10px;
+      padding: 24px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .inspector-body {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .inspector-title {
+      font-size: 1.08rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .control-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .section-card {
+      background: var(--bg-0);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .section-label {
+      font-size: 0.73rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .summary-text {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--text-0);
+    }
+
+    .desc-text {
+      font-size: 0.8rem;
+      line-height: 1.45;
+      color: var(--text-1);
+      white-space: pre-wrap;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+
+    .notes-area {
+      width: 100%;
+      min-height: 95px;
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: var(--text-0);
+      font: inherit;
+      font-size: 0.84rem;
+      resize: vertical;
+      outline: none;
+    }
+
+    .notes-area:focus {
+      border-color: var(--accent);
+    }
+
+    .related-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .related-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: var(--bg-1);
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .related-item:hover {
+      border-color: var(--accent);
+      background: var(--bg-2);
+    }
+
+    .related-item img {
+      width: 56px;
+      height: 32px;
+      object-fit: cover;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .empty-msg {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-1);
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="/pbsspacetime-logo.jpg" alt="PBS Space Time" class="brand-logo" />
+      <span>PBS Space Time Companion</span>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-pill"><strong id="stat-total">0</strong> Episodes</div>
+      <div class="stat-pill"><strong id="stat-watched">0</strong> Watched</div>
+      <div class="stat-pill"><strong id="stat-progress">0</strong> In Progress</div>
+      <div class="stat-pill"><strong id="stat-chosen">0</strong> Chosen / Up Next</div>
+    </div>
+
+    <div class="header-actions">
+      <a
+        href="https://www.patreon.com/pbsspacetime"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn btn-patreon"
+        title="Support Matt O'Dowd and the PBS Space Time team on Patreon"
+      >
+        ♥ Support PBS Space Time on Patreon
+      </a>
+      <span id="sync-status" style="font-size: 0.78rem; color: var(--text-1);"></span>
+      <button class="btn" id="sync-btn" onclick="triggerSync()">↻ Sync Channel</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- Left Catalog & Topic Explorer -->
+    <section class="catalog-pane">
+      <div class="toolbar">
+        <div class="nav-tabs">
+          <button class="tab-btn active" data-tab="videos" onclick="switchTab('videos')">All Videos</button>
+          <button class="tab-btn" data-tab="playlists" onclick="switchTab('playlists')">Playlists</button>
+          <button class="tab-btn" data-tab="topics" onclick="switchTab('topics')">Topics</button>
+          <button class="tab-btn" data-tab="chosen" onclick="switchTab('chosen')">Chosen & Queue</button>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-1);" id="showing-count"></div>
+      </div>
+
+      <div class="filters-row" id="filters-bar">
+        <input
+          type="search"
+          id="search-input"
+          class="search-input"
+          placeholder="Search titles, concepts, summaries, or your notes..."
+          oninput="renderCatalog()"
+        />
+        <select id="status-filter" class="select-ctrl" onchange="renderCatalog()">
+          <option value="all">Status: All</option>
+          <option value="unwatched">Unwatched</option>
+          <option value="in_progress">In Progress</option>
+          <option value="watched">Watched</option>
+          <option value="chosen">Chosen / Watchlist</option>
+        </select>
+        <select id="topic-filter" class="select-ctrl" onchange="renderCatalog()">
+          <option value="all">Topic: All</option>
+        </select>
+        <select id="sort-select" class="select-ctrl" onchange="renderCatalog()">
+          <option value="newest">Sort: Newest First</option>
+          <option value="oldest">Sort: Chronological (Oldest First)</option>
+          <option value="playlist">Sort: Playlist / Recommended Order</option>
+          <option value="views">Sort: Most Popular</option>
+          <option value="duration">Sort: Duration</option>
+        </select>
+      </div>
+
+      <div id="subfilter-banner" class="active-filter-banner" style="display: none;">
+        <span id="subfilter-label"></span>
+        <button class="btn" onclick="clearSubfilter()">✕ Clear Filter</button>
+      </div>
+
+      <div class="scroll-area" id="catalog-scroll"></div>
+    </section>
+
+    <!-- Right Docked Player & Companion Inspector -->
+    <aside class="inspector-pane">
+      <div class="player-box" id="player-box">
+        <button class="fullscreen-btn" id="fs-btn" onclick="toggleFullScreen()" title="Full Screen (or use YouTube's fullscreen button)">
+          ⛶ Fullscreen
+        </button>
+        <div id="yt-player"></div>
+        <div id="player-placeholder" class="player-placeholder">
+          <img src="/pbsspacetime-logo.jpg" alt="PBS Space Time" class="brand-logo" style="width: 48px; height: 48px;" />
+          <div>Click any episode to start watching in the docked player.</div>
+          <div style="font-size: 0.78rem; color: var(--text-2);">
+            Playback progress is saved automatically every 5 seconds.
+          </div>
+        </div>
+      </div>
+
+      <div class="inspector-body" id="inspector-body">
+        <div class="empty-msg">Select an episode from the catalog to view its overview, playlists, topic links, and personal notes.</div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    let STATE = {
+      videos: [],
+      videoMap: {},
+      playlists: [],
+      playlistMap: {},
+      playlistVideos: {}, // playlist_id -> [video_id]
+      videoPlaylists: {}, // video_id -> [{id, title, pos, total}]
+      userState: {},
+      currentTab: "videos",
+      activePlaylistId: null,
+      activeTopic: null,
+      currentVideoId: null,
+    };
+
+    let ytPlayer = null;
+    let ytReady = false;
+    let progressTimer = null;
+    let notesDebounce = null;
+
+    function onYouTubeIframeAPIReady() {
+      ytReady = true;
+    }
+
+    function fmtDuration(sec) {
+      if (!sec) return "";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s < 10 ? "0" : ""}${s}`;
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function getUserState(vid) {
+      return (
+        STATE.userState[vid] || {
+          video_id: vid,
+          status: "unwatched",
+          progress_seconds: 0,
+          is_chosen: false,
+          queue_order: 0,
+          custom_tags: [],
+          notes: "",
+        }
+      );
+    }
+
+    async function loadData() {
+      const res = await fetch("/api/data");
+      const data = await res.json();
+      STATE.videos = data.videos || [];
+      STATE.playlists = data.playlists || [];
+      STATE.userState = data.user_state || {};
+      STATE.videoMap = {};
+      STATE.playlistMap = {};
+      STATE.playlistVideos = {};
+      STATE.videoPlaylists = {};
+
+      for (const v of STATE.videos) STATE.videoMap[v.id] = v;
+      for (const p of STATE.playlists) {
+        STATE.playlistMap[p.id] = p;
+        STATE.playlistVideos[p.id] = [];
+      }
+      for (const pv of data.playlist_videos || []) {
+        if (!STATE.playlistVideos[pv.playlist_id]) STATE.playlistVideos[pv.playlist_id] = [];
+        STATE.playlistVideos[pv.playlist_id].push(pv.video_id);
+      }
+      for (const [pid, vids] of Object.entries(STATE.playlistVideos)) {
+        const pTitle = STATE.playlistMap[pid]?.title || "Playlist";
+        vids.forEach((vid, idx) => {
+          if (!STATE.videoPlaylists[vid]) STATE.videoPlaylists[vid] = [];
+          STATE.videoPlaylists[vid].push({ id: pid, title: pTitle, pos: idx + 1, total: vids.length });
+        });
+      }
+
+      populateTopicDropdown();
+      updateStats();
+      renderCatalog();
+      if (STATE.currentVideoId) renderInspector(STATE.currentVideoId);
+    }
+
+    function populateTopicDropdown() {
+      const select = document.getElementById("topic-filter");
+      const currentVal = select.value;
+      const counts = {};
+      for (const v of STATE.videos) {
+        for (const t of v.auto_topics || []) counts[t] = (counts[t] || 0) + 1;
+      }
+      const topics = Object.keys(counts).sort();
+      select.innerHTML = `<option value="all">Topic: All (${topics.length})</option>` +
+        topics.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)} (${counts[t]})</option>`).join("");
+      if (topics.includes(currentVal)) select.value = currentVal;
+    }
+
+    function updateStats() {
+      let watched = 0, inProg = 0, chosen = 0;
+      for (const v of STATE.videos) {
+        const st = getUserState(v.id);
+        if (st.status === "watched") watched++;
+        else if (st.status === "in_progress") inProg++;
+        if (st.is_chosen) chosen++;
+      }
+      document.getElementById("stat-total").textContent = STATE.videos.length;
+      document.getElementById("stat-watched").textContent = watched;
+      document.getElementById("stat-progress").textContent = inProg;
+      document.getElementById("stat-chosen").textContent = chosen;
+    }
+
+    function switchTab(tab) {
+      STATE.currentTab = tab;
+      document.querySelectorAll(".tab-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.tab === tab);
+      });
+      if (tab !== "videos") {
+        STATE.activePlaylistId = null;
+        STATE.activeTopic = null;
+        document.getElementById("subfilter-banner").style.display = "none";
+      }
+      document.getElementById("filters-bar").style.display =
+        tab === "videos" || tab === "chosen" ? "flex" : "none";
+      renderCatalog();
+    }
+
+    function openPlaylistFilter(playlistId) {
+      STATE.activePlaylistId = playlistId;
+      STATE.activeTopic = null;
+      STATE.currentTab = "videos";
+      document.querySelectorAll(".tab-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.tab === "videos");
+      });
+      document.getElementById("filters-bar").style.display = "flex";
+      document.getElementById("sort-select").value = "playlist";
+      const pl = STATE.playlistMap[playlistId];
+      const banner = document.getElementById("subfilter-banner");
+      document.getElementById("subfilter-label").innerHTML =
+        `Viewing Playlist: <strong>${escapeHtml(pl ? pl.title : playlistId)}</strong> (Ordered by series sequence)`;
+      banner.style.display = "flex";
+      renderCatalog();
+    }
+
+    function openTopicFilter(topic) {
+      STATE.activeTopic = topic;
+      STATE.activePlaylistId = null;
+      STATE.currentTab = "videos";
+      document.querySelectorAll(".tab-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.tab === "videos");
+      });
+      document.getElementById("filters-bar").style.display = "flex";
+      document.getElementById("topic-filter").value = topic;
+      document.getElementById("sort-select").value = "oldest";
+      const banner = document.getElementById("subfilter-banner");
+      document.getElementById("subfilter-label").innerHTML =
+        `Exploring Topic: <strong>${escapeHtml(topic)}</strong> (Recommended foundational-to-recent order)`;
+      banner.style.display = "flex";
+      renderCatalog();
+    }
+
+    function clearSubfilter() {
+      STATE.activePlaylistId = null;
+      STATE.activeTopic = null;
+      document.getElementById("topic-filter").value = "all";
+      document.getElementById("subfilter-banner").style.display = "none";
+      renderCatalog();
+    }
+
+    function renderCatalog() {
+      const container = document.getElementById("catalog-scroll");
+      if (STATE.currentTab === "playlists") {
+        renderPlaylistsTab(container);
+        return;
+      }
+      if (STATE.currentTab === "topics") {
+        renderTopicsTab(container);
+        return;
+      }
+
+      const query = document.getElementById("search-input").value.trim().toLowerCase();
+      const statusFilter = document.getElementById("status-filter").value;
+      const topicFilter = document.getElementById("topic-filter").value;
+      const sortBy = document.getElementById("sort-select").value;
+
+      let list = [];
+      if (STATE.activePlaylistId) {
+        const ids = STATE.playlistVideos[STATE.activePlaylistId] || [];
+        list = ids.map(id => STATE.videoMap[id]).filter(Boolean);
+      } else {
+        list = [...STATE.videos];
+      }
+
+      if (STATE.currentTab === "chosen") {
+        list = list.filter(v => getUserState(v.id).is_chosen);
+      }
+
+      list = list.filter(v => {
+        const st = getUserState(v.id);
+        if (statusFilter === "unwatched" && st.status !== "unwatched") return false;
+        if (statusFilter === "in_progress" && st.status !== "in_progress") return false;
+        if (statusFilter === "watched" && st.status !== "watched") return false;
+        if (statusFilter === "chosen" && !st.is_chosen) return false;
+
+        if (topicFilter !== "all") {
+          const allTopics = [...(v.auto_topics || []), ...(st.custom_tags || [])];
+          if (!allTopics.includes(topicFilter)) return false;
+        }
+
+        if (query) {
+          const hay = `${v.title} ${v.summary} ${v.description} ${(v.auto_topics || []).join(" ")} ${(st.custom_tags || []).join(" ")} ${st.notes || ""}`.toLowerCase();
+          if (!hay.includes(query)) return false;
+        }
+        return true;
+      });
+
+      if (STATE.currentTab === "chosen") {
+        list.sort((a, b) => (getUserState(a.id).queue_order || 0) - (getUserState(b.id).queue_order || 0));
+      } else if (sortBy === "newest") {
+        list.sort((a, b) => a.upload_index - b.upload_index);
+      } else if (sortBy === "oldest") {
+        list.sort((a, b) => b.upload_index - a.upload_index);
+      } else if (sortBy === "views") {
+        list.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+      } else if (sortBy === "duration") {
+        list.sort((a, b) => (b.duration || 0) - (a.duration || 0));
+      }
+
+      document.getElementById("showing-count").textContent = `${list.length} episodes`;
+
+      if (!list.length) {
+        container.innerHTML = `<div class="empty-msg">No episodes match your current filter.</div>`;
+        return;
+      }
+
+      container.innerHTML = `<div class="video-grid">${list.map(renderVideoCard).join("")}</div>`;
+    }
+
+    function renderVideoCard(v) {
+      const st = getUserState(v.id);
+      const isPlaying = STATE.currentVideoId === v.id;
+      const pct = v.duration > 0 ? Math.min(100, Math.round((st.progress_seconds / v.duration) * 100)) : 0;
+
+      let badgeHtml = "";
+      if (st.status === "watched") {
+        badgeHtml = `<span class="status-badge status-watched">✓ Watched</span>`;
+      } else if (st.status === "in_progress") {
+        badgeHtml = `<span class="status-badge status-in_progress">▶ ${pct}%</span>`;
+      }
+
+      const topicsHtml = [
+        ...(v.auto_topics || []).slice(0, 2).map(t => `<span class="pill">${escapeHtml(t)}</span>`),
+        ...(st.custom_tags || []).slice(0, 2).map(t => `<span class="pill custom">#${escapeHtml(t)}</span>`),
+      ].join("");
+
+      return `
+        <article class="video-card ${isPlaying ? "playing" : ""}" onclick="selectVideo('${v.id}')">
+          <div class="thumb-wrap">
+            <img src="${escapeHtml(v.thumbnail)}" loading="lazy" alt="" />
+            ${badgeHtml}
+            <button
+              class="chosen-btn ${st.is_chosen ? "is-chosen" : ""}"
+              title="${st.is_chosen ? "Remove from Chosen/Queue" : "Add to Chosen/Queue"}"
+              onclick="event.stopPropagation(); toggleChosen('${v.id}')"
+            >★</button>
+            ${v.duration ? `<span class="duration-badge">${fmtDuration(v.duration)}</span>` : ""}
+            ${pct > 0 || st.status === "watched" ? `
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill" style="width: ${st.status === "watched" ? 100 : pct}%"></div>
+              </div>` : ""}
+          </div>
+          <div class="card-body">
+            <div class="card-title">${escapeHtml(v.title)}</div>
+            <div class="card-summary">${escapeHtml(v.summary)}</div>
+            <div class="topic-pills">${topicsHtml}</div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderPlaylistsTab(container) {
+      document.getElementById("showing-count").textContent = `${STATE.playlists.length} playlists`;
+      const cards = STATE.playlists.map(pl => {
+        const vids = STATE.playlistVideos[pl.id] || [];
+        const watched = vids.filter(id => getUserState(id).status === "watched").length;
+        const pct = vids.length ? Math.round((watched / vids.length) * 100) : 0;
+        return `
+          <div class="group-card" onclick="openPlaylistFilter('${pl.id}')">
+            <div class="group-header">
+              <div class="group-title">${escapeHtml(pl.title)}</div>
+              <span class="group-count">${vids.length} videos</span>
+            </div>
+            <div class="group-progress-wrap">
+              <div class="group-progress-meta">
+                <span>${watched} / ${vids.length} watched</span>
+                <span>${pct}%</span>
+              </div>
+              <div class="group-progress-bar">
+                <div class="group-progress-fill" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = `<div class="group-grid">${cards.join("")}</div>`;
+    }
+
+    function renderTopicsTab(container) {
+      const topicMap = {};
+      for (const v of STATE.videos) {
+        const st = getUserState(v.id);
+        const allT = new Set([...(v.auto_topics || []), ...(st.custom_tags || [])]);
+        for (const t of allT) {
+          if (!topicMap[t]) topicMap[t] = [];
+          topicMap[t].push(v.id);
+        }
+      }
+      const topics = Object.keys(topicMap).sort((a, b) => topicMap[b].length - topicMap[a].length);
+      document.getElementById("showing-count").textContent = `${topics.length} topics`;
+
+      const cards = topics.map(t => {
+        const vids = topicMap[t];
+        const watched = vids.filter(id => getUserState(id).status === "watched").length;
+        const inProg = vids.filter(id => getUserState(id).status === "in_progress").length;
+        const pct = vids.length ? Math.round((watched / vids.length) * 100) : 0;
+        return `
+          <div class="group-card" onclick="openTopicFilter('${escapeHtml(t)}')">
+            <div class="group-header">
+              <div class="group-title">${escapeHtml(t)}</div>
+              <span class="group-count">${vids.length} episodes</span>
+            </div>
+            <div class="group-progress-wrap">
+              <div class="group-progress-meta">
+                <span>${watched} watched ${inProg ? `· ${inProg} in progress` : ""}</span>
+                <span>${pct}%</span>
+              </div>
+              <div class="group-progress-bar">
+                <div class="group-progress-fill" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = `<div class="group-grid">${cards.join("")}</div>`;
+    }
+
+    function selectVideo(videoId) {
+      STATE.currentVideoId = videoId;
+      const v = STATE.videoMap[videoId];
+      if (!v) return;
+      const st = getUserState(videoId);
+
+      document.getElementById("player-placeholder").style.display = "none";
+      const startSec = st.status === "in_progress" && st.progress_seconds > 5 ? Math.floor(st.progress_seconds) : 0;
+
+      if (ytReady) {
+        if (!ytPlayer) {
+          ytPlayer = new YT.Player("yt-player", {
+            width: "100%",
+            height: "100%",
+            videoId: videoId,
+            playerVars: { autoplay: 1, start: startSec, rel: 0, modestbranding: 1, fs: 1 },
+            events: {
+              onStateChange: onPlayerStateChange,
+            },
+          });
+        } else {
+          ytPlayer.loadVideoById({ videoId: videoId, startSeconds: startSec });
+        }
+      }
+
+      renderCatalog();
+      renderInspector(videoId);
+    }
+
+    function onPlayerStateChange(event) {
+      if (event.data === YT.PlayerState.PLAYING) {
+        startProgressTracking();
+      } else {
+        stopProgressTracking();
+        if (event.data === YT.PlayerState.ENDED && STATE.currentVideoId) {
+          saveUserState(STATE.currentVideoId, { status: "watched", progress_seconds: 0 });
+        }
+      }
+    }
+
+    function startProgressTracking() {
+      stopProgressTracking();
+      progressTimer = setInterval(() => {
+        if (!ytPlayer || !STATE.currentVideoId || typeof ytPlayer.getCurrentTime !== "function") return;
+        const cur = ytPlayer.getCurrentTime() || 0;
+        const dur = ytPlayer.getDuration() || STATE.videoMap[STATE.currentVideoId]?.duration || 0;
+        if (cur < 3) return;
+        const isDone = dur > 0 && cur / dur >= 0.9;
+        const st = getUserState(STATE.currentVideoId);
+        const newStatus = isDone ? "watched" : st.status === "watched" ? "watched" : "in_progress";
+        saveUserState(STATE.currentVideoId, { status: newStatus, progress_seconds: Math.round(cur) }, true);
+      }, 5000);
+    }
+
+    function stopProgressTracking() {
+      if (progressTimer) {
+        clearInterval(progressTimer);
+        progressTimer = null;
+      }
+    }
+
+    async function saveUserState(videoId, patch, silent = false) {
+      const res = await fetch(`/api/state/${encodeURIComponent(videoId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const data = await res.json();
+      if (data.state) {
+        STATE.userState[videoId] = data.state;
+        updateStats();
+        if (!silent) {
+          renderCatalog();
+          if (STATE.currentVideoId === videoId) renderInspector(videoId);
+        }
+      }
+    }
+
+    function toggleFullScreen() {
+      const box = document.getElementById("player-box");
+      if (!document.fullscreenElement) {
+        if (box.requestFullscreen) {
+          box.requestFullscreen();
+        } else if (box.webkitRequestFullscreen) {
+          box.webkitRequestFullscreen();
+        } else if (box.msRequestFullscreen) {
+          box.msRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    function toggleChosen(videoId) {
+      const st = getUserState(videoId);
+      saveUserState(videoId, { is_chosen: !st.is_chosen });
+    }
+
+    function addCustomTag(videoId) {
+      const inp = document.getElementById("custom-tag-input");
+      const val = (inp.value || "").trim();
+      if (!val) return;
+      const st = getUserState(videoId);
+      const tags = Array.from(new Set([...(st.custom_tags || []), val]));
+      inp.value = "";
+      saveUserState(videoId, { custom_tags: tags });
+    }
+
+    function removeCustomTag(videoId, tag) {
+      const st = getUserState(videoId);
+      const tags = (st.custom_tags || []).filter(t => t !== tag);
+      saveUserState(videoId, { custom_tags: tags });
+    }
+
+    function onNotesInput(videoId, text) {
+      clearTimeout(notesDebounce);
+      const indicator = document.getElementById("notes-save-indicator");
+      if (indicator) indicator.textContent = "Saving...";
+      notesDebounce = setTimeout(async () => {
+        await saveUserState(videoId, { notes: text }, true);
+        if (indicator) indicator.textContent = "Saved ✓";
+      }, 500);
+    }
+
+    function renderInspector(videoId) {
+      const v = STATE.videoMap[videoId];
+      if (!v) return;
+      const st = getUserState(videoId);
+      const pls = STATE.videoPlaylists[videoId] || [];
+
+      const playlistsHtml = pls.length
+        ? pls
+            .map(
+              p => `
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; padding:4px 0;">
+                <a href="#" style="color:var(--accent); text-decoration:none;" onclick="event.preventDefault(); openPlaylistFilter('${p.id}')">
+                  ▤ ${escapeHtml(p.title)}
+                </a>
+                <span style="color:var(--text-1);">Ep ${p.pos} of ${p.total}</span>
+              </div>`
+            )
+            .join("")
+        : `<div style="font-size:0.8rem; color:var(--text-2);">Standalone episode (not in a specific series playlist)</div>`;
+
+      const relatedHtml = (v.related_ids || [])
+        .map(rid => STATE.videoMap[rid])
+        .filter(Boolean)
+        .map(
+          rv => `
+          <div class="related-item" onclick="selectVideo('${rv.id}')">
+            <img src="${escapeHtml(rv.thumbnail)}" alt="" />
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(rv.title)}</div>
+              <div style="font-size:0.72rem; color:var(--text-1);">${(rv.auto_topics || []).slice(0, 2).join(" · ")}</div>
+            </div>
+          </div>`
+        )
+        .join("");
+
+      const body = document.getElementById("inspector-body");
+      body.innerHTML = `
+        <div>
+          <div class="inspector-title">${escapeHtml(v.title)}</div>
+          <div style="font-size:0.78rem; color:var(--text-1); margin-top:4px; display:flex; gap:12px;">
+            ${v.published_at ? `<span>Published: ${escapeHtml(v.published_at)}</span>` : ""}
+            ${v.duration ? `<span>Duration: ${fmtDuration(v.duration)}</span>` : ""}
+            ${v.view_count ? `<span>${Number(v.view_count).toLocaleString()} views</span>` : ""}
+            <a href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:none;">YouTube ↗</a>
+          </div>
+        </div>
+
+        <div class="control-strip">
+          <button class="btn ${st.status === "unwatched" ? "active" : ""}" onclick="saveUserState('${v.id}', {status:'unwatched', progress_seconds:0})">○ Unwatched</button>
+          <button class="btn ${st.status === "in_progress" ? "active" : ""}" onclick="saveUserState('${v.id}', {status:'in_progress'})">▶ In Progress</button>
+          <button class="btn ${st.status === "watched" ? "active" : ""}" onclick="saveUserState('${v.id}', {status:'watched'})">✓ Watched</button>
+          <button class="btn ${st.is_chosen ? "active" : ""}" onclick="toggleChosen('${v.id}')">
+            ★ ${st.is_chosen ? "Chosen (In Queue)" : "Add to Chosen"}
+          </button>
+        </div>
+
+        <div class="section-card">
+          <div class="section-label">Episode Overview & Concepts</div>
+          <div class="summary-text">${escapeHtml(v.summary)}</div>
+          <div class="topic-pills" style="margin-top:4px;">
+            ${(v.auto_topics || [])
+              .map(
+                t => `<span class="pill" style="cursor:pointer;" onclick="openTopicFilter('${escapeHtml(t)}')">${escapeHtml(t)}</span>`
+              )
+              .join("")}
+            ${(st.custom_tags || [])
+              .map(
+                t => `<span class="pill custom" style="cursor:pointer;" onclick="removeCustomTag('${v.id}', '${escapeHtml(t)}')" title="Click to remove">#${escapeHtml(t)} ✕</span>`
+              )
+              .join("")}
+          </div>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <input
+              id="custom-tag-input"
+              class="search-input"
+              style="padding:4px 8px; font-size:0.78rem;"
+              placeholder="Add custom topic/tag (e.g. rewatch, math-heavy)..."
+              onkeydown="if(event.key==='Enter') addCustomTag('${v.id}')"
+            />
+            <button class="btn" onclick="addCustomTag('${v.id}')">+ Tag</button>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-label">Series & Playlists</div>
+          ${playlistsHtml}
+        </div>
+
+        <div class="section-card">
+          <div class="section-label">
+            <span>Personal Notes</span>
+            <span id="notes-save-indicator" style="font-weight:400; text-transform:none;">Auto-saves</span>
+          </div>
+          <textarea
+            class="notes-area"
+            placeholder="Write down key insights, timestamps, equations, or questions from this episode..."
+            oninput="onNotesInput('${v.id}', this.value)"
+          >${escapeHtml(st.notes || "")}</textarea>
+        </div>
+
+        ${
+          relatedHtml
+            ? `<div class="section-card">
+                <div class="section-label">Connected & Follow-Up Episodes</div>
+                <div class="related-list">${relatedHtml}</div>
+              </div>`
+            : ""
+        }
+
+        ${
+          v.description
+            ? `<div class="section-card">
+                <div class="section-label">Original Video Description & References</div>
+                <div class="desc-text">${escapeHtml(v.description)}</div>
+              </div>`
+            : ""
+        }
+      `;
+    }
+
+    async function triggerSync() {
+      const btn = document.getElementById("sync-btn");
+      const statusEl = document.getElementById("sync-status");
+      btn.disabled = true;
+      statusEl.textContent = "Syncing catalog...";
+      await fetch("/api/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ full: false }),
+      });
+
+      const poll = setInterval(async () => {
+        const r = await fetch("/api/sync");
+        const s = await r.json();
+        statusEl.textContent = s.message || "";
+        if (!s.running) {
+          clearInterval(poll);
+          btn.disabled = false;
+          await loadData();
+        }
+      }, 2000);
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

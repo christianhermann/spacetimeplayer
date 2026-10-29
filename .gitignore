@@ -1,0 +1,11 @@
+# Database
+spacetime.db
+spacetime.db-shm
+spacetime.db-wal
+
+# Environment / Secret Keys
+.env
+
+# Python
+__pycache__/
+*.pyc
