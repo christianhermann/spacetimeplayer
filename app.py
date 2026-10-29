@@ -294,11 +294,30 @@ if __name__ == "__main__":
     init_db()
     port = int(os.environ.get("PORT", "8000"))
     server = HTTPServer(("127.0.0.1", port), Handler)
+
+    # Windows console close handler: clean shutdown on [X], logoff, or shutdown
+    if sys.platform == "win32":
+        import ctypes
+        handler_type = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_uint)
+        def _console_ctrl_handler(event):
+            try:
+                server.server_close()
+            except Exception:
+                pass
+            os._exit(0)
+            return True
+        _ctrl_handler_ref = handler_type(_console_ctrl_handler)
+        ctypes.windll.kernel32.SetConsoleCtrlHandler(_ctrl_handler_ref, True)
+
     url = f"http://localhost:{port}"
     print(f"PBS Space Time Companion running at {url}")
+    print("Press Ctrl+C or close this window to stop the server.")
     if "--no-browser" not in sys.argv:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:
         server.serve_forever()
-    except KeyboardInterrupt:
-        print("\nShutting down.")
+    except (KeyboardInterrupt, SystemExit):
+        pass
+    finally:
+        server.server_close()
+        print("\nServer stopped.")
