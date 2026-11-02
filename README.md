@@ -23,19 +23,40 @@ I love PBS Space Time, but YouTube can get quite messy when you're trying to fol
 
 ## 🚀 Quick Start
 
-### 1. Launch with One Click (Windows)
+### 1. Launch on Linux / Ubuntu
+In the terminal, run:
+```bash
+./start.sh
+```
+- Sets the terminal window title to `pbs_spacetime_player_terminal`.
+- Starts the local companion server and opens `http://localhost:8000` in your default browser (`xdg-open`).
+- Closing the terminal window automatically and cleanly stops the server (handles `SIGHUP`/`SIGTERM` without lingering port locks).
+
+#### Ubuntu Desktop & App Menu Integration
+To integrate the companion into your GNOME / Ubuntu application dash, dock, and desktop:
+```bash
+./install-desktop-launcher.sh
+```
+- Automatically generates the transparent logo icon (`static/pbsspacetime-logo.png`).
+- Adds **PBS Space Time Companion** to your Ubuntu application menu (`~/.local/share/applications`).
+- Places an executable shortcut on your Desktop (`~/Desktop` or `~/Schreibtisch`).
+
+To cleanly remove the desktop entries at any time:
+```bash
+./uninstall-desktop-launcher.sh
+```
+
+### 2. Launch on Windows
 Double-click:
 - **`start.bat`** (or the **`Start PBS Space Time`** shortcut)
 
-This starts the local Python server and automatically opens `http://localhost:8000` in your browser.
-
-### 2. Or from the Command Line
+### 3. Or Manually from Command Line
 ```bash
-# Install yt-dlp (one time)
-pip install yt-dlp
+# Install dependencies (one time)
+pip install yt-dlp   # on Ubuntu/Debian: pip3 install yt-dlp
 
 # Run server
-python app.py
+python app.py        # on Linux: python3 app.py
 ```
 
 ---

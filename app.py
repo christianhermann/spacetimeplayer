@@ -20,6 +20,41 @@ STATIC_DIR = BASE_DIR / "static"
 SYNC_STATE = {"running": False, "last_run": None, "message": "Idle", "error": None}
 
 
+def ensure_transparent_logo() -> Path:
+    """Ensures static/pbsspacetime-logo.png exists with a transparent background."""
+    logo_png = STATIC_DIR / "pbsspacetime-logo.png"
+    logo_jpg = STATIC_DIR / "pbsspacetime-logo.jpg"
+
+    if logo_png.exists() and (not logo_jpg.exists() or logo_png.stat().st_mtime >= logo_jpg.stat().st_mtime):
+        return logo_png
+
+    if not logo_jpg.exists():
+        return logo_png
+
+    try:
+        from PIL import Image
+        with Image.open(logo_jpg) as img:
+            rgba = img.convert("RGBA")
+            datas = rgba.getdata()
+            bg_r, bg_g, bg_b, _ = datas[0]
+
+            new_data = []
+            for r, g, b, a in datas:
+                # Remove grey square background (near corner grey color)
+                if abs(r - bg_r) < 28 and abs(g - bg_g) < 28 and abs(b - bg_b) < 28 and abs(r - g) < 14 and abs(g - b) < 14:
+                    new_data.append((0, 0, 0, 0))
+                else:
+                    new_data.append((r, g, b, a))
+
+            rgba.putdata(new_data)
+            rgba.save(logo_png, "PNG")
+            print("Generated transparent logo: static/pbsspacetime-logo.png")
+            return logo_png
+    except Exception as exc:
+        print(f"Logo transparency notice: {exc}", file=sys.stderr)
+        return logo_jpg
+
+
 @contextmanager
 def get_db(db_path: Path = DB_PATH):
     with closing(sqlite3.connect(str(db_path))) as conn:
@@ -227,6 +262,9 @@ class Handler(SimpleHTTPRequestHandler):
             self._send_json(fetch_all_data())
         elif parsed.path == "/api/sync":
             self._send_json(SYNC_STATE)
+        elif parsed.path in ("/pbsspacetime-logo.png", "/static/pbsspacetime-logo.png"):
+            ensure_transparent_logo()
+            super().do_GET()
         else:
             if parsed.path == "/":
                 self.path = "/index.html"
@@ -292,10 +330,24 @@ if __name__ == "__main__":
         sys.exit(0)
 
     init_db()
+    ensure_transparent_logo()
+
+    # Set terminal title
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.kernel32.SetConsoleTitleW("pbs_spacetime_player_terminal")
+        except Exception:
+            pass
+    else:
+        sys.stdout.write("\033]0;pbs_spacetime_player_terminal\007")
+        sys.stdout.flush()
+
     port = int(os.environ.get("PORT", "8000"))
+    HTTPServer.allow_reuse_address = True
     server = HTTPServer(("127.0.0.1", port), Handler)
 
-    # Windows console close handler: clean shutdown on [X], logoff, or shutdown
+    # Console close & signal handler: clean shutdown on [X], terminal close, or SIGTERM/SIGHUP
     if sys.platform == "win32":
         import ctypes
         handler_type = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_uint)
@@ -308,6 +360,20 @@ if __name__ == "__main__":
             return True
         _ctrl_handler_ref = handler_type(_console_ctrl_handler)
         ctypes.windll.kernel32.SetConsoleCtrlHandler(_ctrl_handler_ref, True)
+    else:
+        import signal
+        def _posix_signal_handler(signum, frame):
+            try:
+                server.server_close()
+            except Exception:
+                pass
+            os._exit(0)
+        for sig in (signal.SIGINT, signal.SIGTERM, getattr(signal, "SIGHUP", None)):
+            if sig is not None:
+                try:
+                    signal.signal(sig, _posix_signal_handler)
+                except Exception:
+                    pass
 
     url = f"http://localhost:{port}"
     print(f"PBS Space Time Companion running at {url}")

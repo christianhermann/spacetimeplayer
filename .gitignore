@@ -9,3 +9,6 @@ spacetime.db-wal
 # Python
 __pycache__/
 *.pyc
+
+# Local desktop launcher (generated with absolute paths)
+spacetimeplayer.desktop

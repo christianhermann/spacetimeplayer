@@ -19,7 +19,7 @@ if _env_file.exists():
 
 import yt_dlp
 
-from app import DB_PATH, get_db, init_db
+from app import DB_PATH, get_db, init_db, ensure_transparent_logo
 
 CHANNEL_VIDEOS_URL = "https://www.youtube.com/@pbsspacetime/videos"
 CHANNEL_PLAYLISTS_URL = "https://www.youtube.com/@pbsspacetime/playlists"
@@ -387,6 +387,7 @@ def sync_catalog(full_details: bool = False, summarize: bool = False) -> None:
 
 
 if __name__ == "__main__":
+    ensure_transparent_logo()
     full_flag = "--full" in sys.argv
     sum_flag = "--summarize" in sys.argv
     sync_catalog(full_details=full_flag, summarize=sum_flag)
